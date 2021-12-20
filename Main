@@ -1,0 +1,96 @@
+//display suffs (;
+#include <SPI.h>
+#include <RA8875.h>
+
+#define RA8875_INT 4 
+#define RA8875_CS 10 
+#define RA8875_RESET 9
+
+RA8875 tft = RA8875(RA8875_CS,RA8875_RESET);
+
+//declaring all pins (const)
+const int VRx = A0;
+const int VRy = A1;
+const int SW = A2;
+const int VRx_1 = A3;
+const int VRy_1 = A4;
+const int SW_1 = A5;
+const int sp = A6;
+
+//decalaring all variables (that change)
+int xPos = 0;
+int yPos = 0;
+int SW_state = 0;
+int xPos_1 = 0;
+int yPos_1 = 0;
+int SW_state_1 = 0;
+
+int ballx = 100;
+int bally = 100;
+float speed = 1;
+int directionx = 1;
+int directiony = 1;
+
+//joystick zero variables
+int xRest = 512;
+int yRest = 512;
+int xRest_1 = 512;
+int yRest_1 = 512;
+
+void setup() {
+  tft.begin(RA8875_480x272);
+  tft.changeMode(GRAPHIC);
+  tft.fillScreen(RA8875_WHITE);
+  
+  //start communication (to pc)
+  Serial.begin(9600); 
+
+  //set inputs
+  pinMode(VRx, INPUT);
+  pinMode(VRy, INPUT);
+  pinMode(VRx_1, INPUT);
+  pinMode(VRy_1, INPUT);
+  pinMode(SW_1, INPUT_PULLUP);
+  pinMode(SW, INPUT_PULLUP);
+
+  //zero joysticks
+  xRest = analogRead(VRx);
+  yRest = analogRead(VRy);
+  xRest_1 = analogRead(VRx_1);
+  yRest_1 = analogRead(VRy_1);
+}
+
+void loop() {
+  
+  //reading all data from the pins
+  xPos = analogRead(VRx) - xRest;
+  yPos = analogRead(VRy) - yRest;
+  SW_state = not digitalRead(SW);
+  xPos_1 = analogRead(VRx_1) - xRest_1;
+  yPos_1 = analogRead(VRy_1) - yRest_1;
+  SW_state_1 = not digitalRead(SW_1);
+
+  //debug
+  Serial.print("X: ");
+  Serial.print(xPos);
+  Serial.print(" | Y: ");
+  Serial.print(yPos);
+  Serial.print(" | Button: ");
+  Serial.print(SW_state);
+  Serial.print("       ");
+  Serial.print("X: ");
+  Serial.print(xPos_1);
+  Serial.print(" | Y: ");
+  Serial.print(yPos_1);
+  Serial.print(" | Button: ");
+  Serial.println(SW_state_1); 
+
+  if(SW_state || SW_state_1)
+  {
+    tone(sp, 1000);
+  }
+  else
+  {
+    noTone(sp);
+  }
+}
