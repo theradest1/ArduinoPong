@@ -25,11 +25,19 @@ int xPos_1 = 0;
 int yPos_1 = 0;
 int SW_state_1 = 0;
 
-int ballx = 100;
-int bally = 100;
-float speed = 1;
+float ballx = 240;
+float bally = 136;
+float ballx_1 = 0;
+float bally_1 = 0;
+float ballSpeed = .2;
 int directionx = 1;
 int directiony = 1;
+
+float paddleY = 240;
+float paddleY_1 = 240;
+const int paddleX = 20;
+const int paddleWidth = 8;
+const int paddleHeight = 20;
 
 //joystick zero variables
 int xRest = 512;
@@ -40,7 +48,7 @@ int yRest_1 = 512;
 void setup() {
   tft.begin(RA8875_480x272);
   tft.changeMode(GRAPHIC);
-  tft.fillScreen(RA8875_WHITE);
+  tft.fillScreen(RA8875_BLACK);
   
   //start communication (to pc)
   Serial.begin(9600); 
@@ -58,10 +66,34 @@ void setup() {
   yRest = analogRead(VRy);
   xRest_1 = analogRead(VRx_1);
   yRest_1 = analogRead(VRy_1);
+  ballReset();
 }
 
+void ballReset()
+{
+  ballx = 240;
+  bally = 136;
+  ballSpeed = .15;
+  tft.fillCircle(ballx,bally,5,RA8875_WHITE);
+
+  delay(2000);
+  directionx = random(0, 2);
+  directiony = random(0, 2);
+
+  Serial.print(directionx);
+  Serial.print(", ");
+  Serial.println(directiony);
+
+  if(directionx == 0){
+    directionx = -1;
+  }
+  if(directiony == 0){
+    directiony = -1;
+  }
+}
+
+
 void loop() {
-  
   //reading all data from the pins
   xPos = analogRead(VRx) - xRest;
   yPos = analogRead(VRy) - yRest;
@@ -70,7 +102,9 @@ void loop() {
   yPos_1 = analogRead(VRy_1) - yRest_1;
   SW_state_1 = not digitalRead(SW_1);
 
+  /*
   //debug
+  
   Serial.print("X: ");
   Serial.print(xPos);
   Serial.print(" | Y: ");
@@ -84,7 +118,13 @@ void loop() {
   Serial.print(yPos_1);
   Serial.print(" | Button: ");
   Serial.println(SW_state_1); 
+  Serial.print(ballx);
+  Serial.print(", ");
+  Serial.println(bally);
+  */
 
+  ballx_1 = ballx; bally_1 = bally;
+  
   if(SW_state || SW_state_1)
   {
     tone(sp, 1000);
@@ -93,4 +133,18 @@ void loop() {
   {
     noTone(sp);
   }
+  ballx += directionx * ballSpeed;
+  bally += directiony * ballSpeed;
+  if(ballx <= 5 || ballx >= 475)
+  {
+    ballReset();
+  }
+  if(bally <= 5 || bally >= 267)
+  {
+    directiony *= -1;
+    ballSpeed += .01;
+  }
+  
+  tft.fillCircle(ballx_1,bally_1,5,RA8875_BLACK);
+  tft.fillCircle(ballx,bally,5,RA8875_WHITE);
 }
