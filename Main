@@ -29,15 +29,20 @@ float ballx = 240;
 float bally = 136;
 float ballx_1 = 0;
 float bally_1 = 0;
-float ballSpeed = .2;
+const float baseBallSpeed = 3.5;
+const float ballSpeedUp = .1;
+float ballSpeed = 5;
 int directionx = 1;
 int directiony = 1;
 
 float paddleY = 240;
 float paddleY_1 = 240;
+float pastY = 240;
+float pastY_1 = 240;
 const int paddleX = 20;
 const int paddleWidth = 8;
-const int paddleHeight = 20;
+const int paddleHeight = 50;
+float paddleSpeed = .015;
 
 //joystick zero variables
 int xRest = 512;
@@ -60,6 +65,7 @@ void setup() {
   pinMode(VRy_1, INPUT);
   pinMode(SW_1, INPUT_PULLUP);
   pinMode(SW, INPUT_PULLUP);
+  pinMode(sp, OUTPUT);
 
   //zero joysticks
   xRest = analogRead(VRx);
@@ -73,10 +79,10 @@ void ballReset()
 {
   ballx = 240;
   bally = 136;
-  ballSpeed = .15;
+  ballSpeed = baseBallSpeed;
   tft.fillCircle(ballx,bally,5,RA8875_WHITE);
 
-  delay(2000);
+  //delay(2000);
   directionx = random(0, 2);
   directiony = random(0, 2);
 
@@ -95,13 +101,24 @@ void ballReset()
 
 void loop() {
   //reading all data from the pins
-  xPos = analogRead(VRx) - xRest;
-  yPos = analogRead(VRy) - yRest;
+  //xPos = analogRead(VRx) - xRest;
+  yPos = -1 * (analogRead(VRy) - yRest);
   SW_state = not digitalRead(SW);
-  xPos_1 = analogRead(VRx_1) - xRest_1;
+  //xPos_1 = analogRead(VRx_1) - xRest_1;
   yPos_1 = analogRead(VRy_1) - yRest_1;
   SW_state_1 = not digitalRead(SW_1);
 
+  //moving paddles according to the joysticks
+
+  pastY = paddleY;
+  pastY_1 = paddleY_1;
+  paddleY += yPos * paddleSpeed;
+  paddleY_1 += yPos_1 * paddleSpeed;
+
+  //limiting the paddle 
+  paddleY = constrain(paddleY, 0, 272 - paddleHeight);
+  paddleY_1 = constrain(paddleY_1, 0, 272 - paddleHeight);
+  
   /*
   //debug
   
@@ -124,7 +141,6 @@ void loop() {
   */
 
   ballx_1 = ballx; bally_1 = bally;
-  
   if(SW_state || SW_state_1)
   {
     tone(sp, 1000);
@@ -142,9 +158,23 @@ void loop() {
   if(bally <= 5 || bally >= 267)
   {
     directiony *= -1;
-    ballSpeed += .01;
+    ballSpeed += ballSpeedUp;
+    
+  }
+  if((ballx <= paddleX + paddleWidth + 5 && paddleY <= bally && bally <= paddleY + paddleHeight) || (ballx >= 480 - paddleX - paddleWidth && paddleY_1 <= bally && bally <= paddleY_1 + paddleHeight))
+  {
+    directionx *= -1;
+    tone(sp, 1000, 5);
   }
   
+  //display everything
+  //tft.fillScreen(RA8875_BLACK);
   tft.fillCircle(ballx_1,bally_1,5,RA8875_BLACK);
   tft.fillCircle(ballx,bally,5,RA8875_WHITE);
+  tft.fillRect(paddleX, pastY, paddleWidth, paddleHeight, RA8875_BLACK);
+  tft.fillRect(paddleX, paddleY, paddleWidth, paddleHeight, RA8875_WHITE);
+  tft.fillRect(480 - paddleX, pastY_1, paddleWidth, paddleHeight, RA8875_BLACK);
+  tft.fillRect(480 - paddleX, paddleY_1, paddleWidth, paddleHeight, RA8875_WHITE);
+
+  delay(30);
 }
