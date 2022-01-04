@@ -1,4 +1,4 @@
-//display suffs (;
+                    //display suffs (;
 #include <SPI.h>
 #include <RA8875.h>
 
@@ -18,6 +18,11 @@ const int SW_1 = A5;
 const int sp = A6;
 
 //decalaring all variables (that change)
+uint16_t tx = 0;
+uint16_t ty = 0;
+
+int players = 0; // or 2
+
 int xPos = 0;
 int yPos = 0;
 int SW_state = 0;
@@ -35,7 +40,7 @@ float ballSpeed = 5;
 int directionx = 1;
 int directiony = 1;
 
-float paddleY = 240;
+float paddleY = 136;
 float paddleY_1 = 240;
 float pastY = 240;
 float pastY_1 = 240;
@@ -72,6 +77,41 @@ void setup() {
   yRest = analogRead(VRy);
   xRest_1 = analogRead(VRx_1);
   yRest_1 = analogRead(VRy_1);
+
+  tft.touchBegin(RA8875_INT);
+  tft.fillRoundRect(190,10,100,100,5,RA8875_WHITE);
+  tft.fillRoundRect(190,120,100,100,5,RA8875_WHITE);
+  
+  tft.changeMode(TEXT);
+  tft.setTextColor(RA8875_BLACK);
+  tft.setFontScale(0);
+  tft.setCursor(210, 160);
+  tft.println("2 Player");
+  tft.setCursor(210, 50);
+  tft.println("1 Player");
+  tft.changeMode(GRAPHIC);
+  
+  while(players == 0)
+  {
+    if(tft.touchDetect())
+    {
+      Serial.println("touch");
+      tft.touchReadPixel(&tx, &ty);
+      tx = tx;ty = ty;
+      if(tx >= 190 && tx <= 290 && ty >= 10 && ty <= 110)
+      {
+        Serial.println("1 Player");
+        players = 1;
+      }
+      else if(tx >= 190 && tx <= 290 && ty >= 120 && ty <= 220)
+      {
+        Serial.println("2 Player");
+        players = 2;
+      }
+    }
+  }
+  tft.fillScreen(RA8875_BLACK);
+  
   ballReset();
 }
 
@@ -82,7 +122,7 @@ void ballReset()
   ballSpeed = baseBallSpeed;
   tft.fillCircle(ballx,bally,5,RA8875_WHITE);
 
-  //delay(2000);
+  delay(2000);
   directionx = random(0, 2);
   directiony = random(0, 2);
 
@@ -151,7 +191,7 @@ void loop() {
   }
   ballx += directionx * ballSpeed;
   bally += directiony * ballSpeed;
-  if(ballx <= 5 || ballx >= 475)
+  if(ballx >= 475 || (ballx <= 5 && players == 2))
   {
     ballReset();
   }
@@ -159,20 +199,36 @@ void loop() {
   {
     directiony *= -1;
     ballSpeed += ballSpeedUp;
-    
   }
-  if((ballx <= paddleX + paddleWidth + 5 && paddleY <= bally && bally <= paddleY + paddleHeight) || (ballx >= 480 - paddleX - paddleWidth && paddleY_1 <= bally && bally <= paddleY_1 + paddleHeight))
+  if(ballx <= 5 && players == 1)
   {
-    directionx *= -1;
-    tone(sp, 1000, 5);
+    directionx = 1;
+    ballSpeed += ballSpeedUp;
+  }
+
+  //paddles
+  if(ballx >= 480 - paddleX - paddleWidth && paddleY_1 <= bally && bally <= paddleY_1 + paddleHeight)
+  {
+    directionx = -1;
+    tone(sp, 1000, 10);
+  }
+  if(ballx <= paddleX + paddleWidth + 5 && paddleY <= bally && bally <= paddleY + paddleHeight && players == 2)
+  {
+    directionx = 1;
+    tone(sp, 1000, 10);
   }
   
   //display everything
   //tft.fillScreen(RA8875_BLACK);
   tft.fillCircle(ballx_1,bally_1,5,RA8875_BLACK);
   tft.fillCircle(ballx,bally,5,RA8875_WHITE);
-  tft.fillRect(paddleX, pastY, paddleWidth, paddleHeight, RA8875_BLACK);
-  tft.fillRect(paddleX, paddleY, paddleWidth, paddleHeight, RA8875_WHITE);
+
+  if(players == 2)
+  {
+    tft.fillRect(paddleX, pastY, paddleWidth, paddleHeight, RA8875_BLACK);
+    tft.fillRect(paddleX, paddleY, paddleWidth, paddleHeight, RA8875_WHITE);
+  }
+
   tft.fillRect(480 - paddleX, pastY_1, paddleWidth, paddleHeight, RA8875_BLACK);
   tft.fillRect(480 - paddleX, paddleY_1, paddleWidth, paddleHeight, RA8875_WHITE);
 
